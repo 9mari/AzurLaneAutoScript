@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from module.base.timer import Timer
 from module.base.utils import *
-from module.config.utils import get_os_next_reset, DEFAULT_TIME
+from module.config.utils import DEFAULT_TIME, get_os_next_reset
 from module.logger import logger
 from module.map_detection.utils import fit_points
 from module.os.assets import GLOBE_GOTO_MAP
@@ -60,12 +60,7 @@ class MissionHandler(GlobeOperation, ZoneManager):
         logger.info('OS mission enter')
         checkout_offset = (-20, -20, 20, 20)
         confirm_timer = Timer(2, count=6).start()
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             # End
             if self.is_in_os_mission() \
                     and not self.appear(MISSION_FINISH, offset=checkout_offset) \
@@ -105,21 +100,16 @@ class MissionHandler(GlobeOperation, ZoneManager):
                 if self.handle_info_bar():
                     confirm_timer.reset()
                     continue
-                
+
             if self.appear_then_click(GLOBE_GOTO_MAP, offset=(20, 20), interval=2):
                 # Accidentally entered globe
                 confirm_timer.reset()
                 continue
         return checkout_offset
 
-    def os_mission_quit(self, skip_first_screenshot=True):
+    def os_mission_quit(self):
         logger.info('OS mission quit')
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             # End
             # sometimes you have os mission popup without black-blurred background
             # MISSION_QUIT and is_in_map appears
@@ -164,13 +154,7 @@ class MissionHandler(GlobeOperation, ZoneManager):
             return False
 
         logger.info('Checkout os mission')
-        skip_first_screenshot = True
-        while 1:
-            if skip_first_screenshot:
-                skip_first_screenshot = False
-            else:
-                self.device.screenshot()
-
+        for _ in self.loop():
             # End
             if self.is_zone_pinned():
                 if self.get_zone_pinned_name() == 'ARCHIVE':
@@ -214,7 +198,13 @@ class MissionHandler(GlobeOperation, ZoneManager):
                       offset=(200, 20), retry_wait=3, additional=self.handle_manjuu,
                       skip_first_screenshot=True)
 
+        timeout = 5
+        accept_button_timer = Timer(timeout)
+        self.interval_timer[MISSION_OVERVIEW_ACCEPT_SINGLE.name] = accept_button_timer
+        self.interval_timer[MISSION_OVERVIEW_ACCEPT.name] = accept_button_timer
         # MISSION_OVERVIEW_CHECK
+        confirm_timer = Timer(1, count=3).start()
+        skip_first_screenshot = True
         success = True
         while 1:
             if skip_first_screenshot:

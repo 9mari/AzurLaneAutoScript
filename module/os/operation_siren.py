@@ -301,7 +301,7 @@ class OperationSiren(OSMap):
 
         logger.hr('OS clear obscure', level=1)
         while True:
-            if self.storage_get_next_item('OBSCURE', use_logger=True, 
+            if self.storage_get_next_item('OBSCURE', use_logger=True,
                     skip_obscure_hazard_2=self.config.OpsiObscure_SkipHazard2Obscure):
                 self.zone_init()
                 self.fleet_set(self.config.OpsiFleet_Fleet)
